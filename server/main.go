@@ -2,7 +2,6 @@ package main
 
 import (
   "database/sql"
-  "encoding/json"
   "log"
   "net/http"
   "os"
@@ -24,7 +23,7 @@ func main() {
   }
 
   router := mux.NewRouter()
-  router.HandleFunc("/api/go/posts", getUsers(db)).Mehtods("GET")
+  router.HandleFunc("/api/go/posts", GetPosts(db)).Methods("GET")
 
   enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
 
@@ -41,7 +40,6 @@ func enableCORS(next http.Handler) http.Handler {
       w.WriteHeader(http.StatusOK)
       return
     }
-    
     next.ServeHTTP(w, r)
   })
 }
