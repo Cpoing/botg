@@ -1,52 +1,39 @@
 package main
 
 import (
-  "database/sql"
-  "log"
-  "net/http"
-  "os"
-
-  "github.com/gorilla/mux"
-  _ "github.com/lib/pq"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
 )
 
+func home(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Home"))
+}
+
+func blogView(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
+	}
+
+	msg := fmt.Sprintf("Display a specific blog with ID %d...", id)
+	w.Write([]byte(msg))
+}
+
+func blogCreate(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Display a form for creating a new blog"))
+}
+
 func main() {
-  db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
-  if err != nil {
-    log.Fatal(err)
-  }
-  defer db.Close()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/{$}", home)
+	mux.HandleFunc("/blog/view/{id}", blogView)
+	mux.HandleFunc("/blog/create", blogCreate)
 
-  _, err := db.Exec("CREATE TABLE IF NOT EXISTS posts (id SERIAL PRIMARY KEY, content TEXT)")
-  if err != nil {
-    log.Fatal(err)
-  }
+	log.Println("Starting server on :4000")
 
-  router := mux.NewRouter()
-  router.HandleFunc("/api/go/posts", GetPosts(db)).Methods("GET")
-
-  enhancedRouter := enableCORS(jsonContentTypeMiddleware(router))
-
-  log.Fatal(http.ListenAndServe(":8000", enhancedRouter))
-}
-
-func enableCORS(next http.Handler) http.Handler {
-  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Origin", "GET, POST, PUT, DELETE, OPTIONS")
-    w.Header().Set("Access-Control-Allow-Origin", "Content-Type, Authorization")
-
-    if r.Method == "OPTIONS" {
-      w.WriteHeader(http.StatusOK)
-      return
-    }
-    next.ServeHTTP(w, r)
-  })
-}
-
-func jsonContentTypeMiddleware(next http.Handler) http.Handler {
-  return http.HandleFunc(func(w http.ResponseWirter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    next.ServeHTTP(w, r)
-  }) 
+	err := http.ListenAndServe(":4000", mux)
+	log.Fatal(err)
 }
