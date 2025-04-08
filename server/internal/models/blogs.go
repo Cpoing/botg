@@ -55,5 +55,28 @@ func (m *BlogModel) Get(id int) (Blog, error) {
 }
 
 func (m *BlogModel) Latest() ([]Blog, error) {
-	return nil, nil
+	stmt := `SELECT id, title, content, created FROM blogs
+  ORDER BY id DESC LIMIT 10`
+
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var blogs []Blog
+
+	for rows.Next() {
+		var b Blog
+
+		err = rows.Scan(&b.ID, &b.Content, &b.Content, &b.Created)
+		if err != nil {
+			return nil, err
+		}
+
+		blogs = append(blogs, b)
+	}
+
+	return blogs, nil
 }

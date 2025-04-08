@@ -1,17 +1,26 @@
 package main
 
 import (
-  "errors"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
-  "api/internal/models"
+	"api/internal/models"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "Go")
-	w.Write([]byte("Home"))
+
+	blogs, err := app.blogs.Latest()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	for _, blog := range blogs {
+		fmt.Fprintf(w, "%+v\n", blog)
+	}
 }
 
 func (app *application) blogView(w http.ResponseWriter, r *http.Request) {
@@ -21,16 +30,16 @@ func (app *application) blogView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  blog, err := app.blogs.Get(id)
-  if err != nil {
-    if errors.Is(err, models.ErrNoRecord) {
-      http.NotFound(w, r)
-    } else {
-      app.serverError(w, r, err)
-    }
-  }
+	blog, err := app.blogs.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			http.NotFound(w, r)
+		} else {
+			app.serverError(w, r, err)
+		}
+	}
 
-  fmt.Fprintf(w, "%+v", blog)
+	fmt.Fprintf(w, "%+v", blog)
 }
 
 func (app *application) blogCreate(w http.ResponseWriter, r *http.Request) {
