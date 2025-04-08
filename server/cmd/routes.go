@@ -2,9 +2,11 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/justinas/alice"
 )
 
-func (app *application) routes() *http.ServeMux {
+func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{$}", app.home)
@@ -12,5 +14,7 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("GET /blog/create", app.blogCreate)
 	mux.HandleFunc("POST /blog/create", app.blogCreatePost)
 
-	return mux
+	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
+
+	return standard.Then(mux)
 }
