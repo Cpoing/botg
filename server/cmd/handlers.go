@@ -1,9 +1,12 @@
 package main
 
 import (
+  "errors"
 	"fmt"
 	"net/http"
 	"strconv"
+
+  "api/internal/models"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -18,17 +21,33 @@ func (app *application) blogView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg := fmt.Sprintf("Display a specific blog with ID %d...", id)
-	w.Write([]byte(msg))
+  blog, err := app.blogs.Get(id)
+  if err != nil {
+    if errors.Is(err, models.ErrNoRecord) {
+      http.NotFound(w, r)
+    } else {
+      app.serverError(w, r, err)
+    }
+  }
+
+  fmt.Fprintf(w, "%+v", blog)
 }
 
 func (app *application) blogCreate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Display a form for creating a new blog"))
 }
 
-func (app *application) blogCreatePost(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Save a new blog..."))
+func (app *application) blogCreatePost(w http.ResponseWriter, r *http.Request) {
+	title := "blog 1"
+	content := "Testing blog 1"
+
+	id, err := app.blogs.Insert(title, content)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/blog/view/%d", id), http.StatusSeeOther)
 }
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {

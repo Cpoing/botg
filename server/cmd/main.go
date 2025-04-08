@@ -9,12 +9,14 @@ import (
 	"net/http"
 	"os"
 
+  "api/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
 type application struct {
 	logger *slog.Logger
+  blogs *models.BlogModel
 }
 
 func main() {
@@ -41,6 +43,7 @@ func main() {
 
 	app := &application{
 		logger: logger,
+    blogs: &models.BlogModel{DB: db},
 	}
 
 	logger.Info("Starting server", "addr", *addr)
