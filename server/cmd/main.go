@@ -1,6 +1,6 @@
 package main
 
-// 199
+// 224
 
 import (
 	"database/sql"
@@ -8,15 +8,19 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+  "time"
 
   "api/internal/models"
 	_ "github.com/go-sql-driver/mysql"
+  "github.com/alexedwards/scs/v2"
+  "github.com/alexedwards/scs/mysqlstore"
 	"github.com/joho/godotenv"
 )
 
 type application struct {
 	logger *slog.Logger
   blogs *models.BlogModel
+  sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -41,9 +45,14 @@ func main() {
 	}
 	defer db.Close()
 
+  sessionManager := scs.New()
+  sessionManager.Store = mysqlstore.New(db)
+  sessionManager.Lifetime = 12 * time.Hour
+
 	app := &application{
 		logger: logger,
     blogs: &models.BlogModel{DB: db},
+    sessionManager: sessionManager,
 	}
 
 	logger.Info("Starting server", "addr", *addr)

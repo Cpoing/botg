@@ -9,10 +9,12 @@ import (
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /{$}", app.home)
-	mux.HandleFunc("GET /blog/view/{id}", app.blogView)
-	mux.HandleFunc("GET /blog/create", app.blogCreate)
-	mux.HandleFunc("POST /blog/create", app.blogCreatePost)
+	dynamic := alice.New(app.sessionManager.LoadAndSave)
+
+	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
+	mux.Handle("GET /blog/view/{id}", dynamic.ThenFunc(app.blogView))
+	mux.Handle("GET /blog/create", dynamic.ThenFunc(app.blogCreate))
+	mux.Handle("POST /blog/create", dynamic.ThenFunc(app.blogCreatePost))
 
 	standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
 

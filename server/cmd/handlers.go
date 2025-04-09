@@ -7,13 +7,13 @@ import (
 	"strconv"
 
 	"api/internal/models"
-  "api/internal/validator"
+	"api/internal/validator"
 )
 
 type blogCreateForm struct {
-  Title string
-  Content string
-  validator.Validator
+	Title   string
+	Content string
+	validator.Validator
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -42,9 +42,12 @@ func (app *application) blogView(w http.ResponseWriter, r *http.Request) {
 		} else {
 			app.serverError(w, r, err)
 		}
+		return
 	}
 
-	fmt.Fprintf(w, "%+v", blog)
+	flash := app.sessionManager.PopString(r.Context(), "flash")
+
+	fmt.Fprintf(w, "%+v", blog, flash)
 }
 
 func (app *application) blogCreate(w http.ResponseWriter, r *http.Request) {
@@ -52,30 +55,32 @@ func (app *application) blogCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) blogCreatePost(w http.ResponseWriter, r *http.Request) {
-  err := r.ParseForm()
-  if err != nil {
-    app.clientError(w, http.StatusBadRequest)
-  }
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+	}
 
-  form := blogCreateForm{
-    Title: r.PostForm.Get("title"),
-    Content: r.PostForm.Get("content"),
-  }
+	form := blogCreateForm{
+		Title:   r.PostForm.Get("title"),
+		Content: r.PostForm.Get("content"),
+	}
 
-  form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
-  form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be more than 100 characters long")
-  form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+	form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be more than 100 characters long")
+	form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
 
-  if !form.Valid() {
-    fmt.Fprint(w, form.FieldErrors)
-    return
-  }
+	if !form.Valid() {
+		fmt.Fprint(w, form.FieldErrors)
+		return
+	}
 
 	id, err := app.blogs.Insert(form.Title, form.Content)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
+
+	app.sessionManager.Put(r.Context(), "flash", "Blog successfully created")
 
 	http.Redirect(w, r, fmt.Sprintf("/blog/view/%d", id), http.StatusSeeOther)
 }
