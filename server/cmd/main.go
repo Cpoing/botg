@@ -20,6 +20,7 @@ import (
 type application struct {
 	logger *slog.Logger
   blogs *models.BlogModel
+  users *models.UserModel
   sessionManager *scs.SessionManager
 }
 
@@ -52,6 +53,7 @@ func main() {
 	app := &application{
 		logger: logger,
     blogs: &models.BlogModel{DB: db},
+    users: &models.UserModel{DB: db},
     sessionManager: sessionManager,
 	}
 

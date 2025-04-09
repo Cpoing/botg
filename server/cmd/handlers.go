@@ -16,6 +16,12 @@ type blogCreateForm struct {
 	validator.Validator
 }
 
+type userLoginForm struct {
+	Username string
+	Password string
+	validator.Validator
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	blogs, err := app.blogs.Latest()
 	if err != nil {
@@ -47,11 +53,8 @@ func (app *application) blogView(w http.ResponseWriter, r *http.Request) {
 
 	flash := app.sessionManager.PopString(r.Context(), "flash")
 
-	fmt.Fprintf(w, "%+v", blog, flash)
-}
-
-func (app *application) blogCreate(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Display a form for creating a new blog"))
+	fmt.Fprintf(w, "%+v", blog)
+	fmt.Fprintf(w, "%+v", flash)
 }
 
 func (app *application) blogCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -97,4 +100,50 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 
 func (app *application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
+}
+
+func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form := userLoginForm{
+		Username: r.PostForm.Get("username"),
+		Password: r.PostForm.Get("password"),
+	}
+
+	form.CheckField(validator.NotBlank(form.Username), "username", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+
+	if !form.Valid() {
+		fmt.Fprint(w, form.FieldErrors)
+		return
+	}
+
+	id, err := app.users.Authenticate(form.Username, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			form.AddNonFieldError("Email or password is incorrect")
+			fmt.Fprint(w, form.FieldErrors)
+		} else {
+			app.serverError(w, r, err)
+		}
+		return
+	}
+
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+
+	http.Redirect(w, r, "/blog/create", http.StatusSeeOther)
+}
+
+func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
+	//logout
 }
