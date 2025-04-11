@@ -9,7 +9,7 @@ import (
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	dynamic := alice.New(app.sessionManager.LoadAndSave)
+	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf)
 
 	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
 	mux.Handle("GET /blog/view/{id}", dynamic.ThenFunc(app.blogView))
