@@ -8,20 +8,21 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-  "time"
+	"time"
 
-  "api/internal/models"
+	"api/internal/models"
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	_ "github.com/go-sql-driver/mysql"
-  "github.com/alexedwards/scs/v2"
-  "github.com/alexedwards/scs/mysqlstore"
 	"github.com/joho/godotenv"
 )
 
 type application struct {
-	logger *slog.Logger
-  blogs *models.BlogModel
-  users *models.UserModel
-  sessionManager *scs.SessionManager
+	debug          bool
+	logger         *slog.Logger
+	blogs          *models.BlogModel
+	users          *models.UserModel
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -46,25 +47,25 @@ func main() {
 	}
 	defer db.Close()
 
-  sessionManager := scs.New()
-  sessionManager.Store = mysqlstore.New(db)
-  sessionManager.Lifetime = 12 * time.Hour
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
 
 	app := &application{
-		logger: logger,
-    blogs: &models.BlogModel{DB: db},
-    users: &models.UserModel{DB: db},
-    sessionManager: sessionManager,
+		logger:         logger,
+		blogs:          &models.BlogModel{DB: db},
+		users:          &models.UserModel{DB: db},
+		sessionManager: sessionManager,
 	}
 
-  srv := &http.Server{
-    Addr: *addr,
-    Handler: app.routes(),
-    ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
-    IdleTimeout: time.Minute,
-    ReadTimeout: 5 * time.Second,
-    WriteTimeout: 10 * time.Second,
-  }
+	srv := &http.Server{
+		Addr:         *addr,
+		Handler:      app.routes(),
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
 
 	logger.Info("Starting server", "addr", srv.Addr)
 
