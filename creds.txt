@@ -1,0 +1,3 @@
+MYSQL USER:
+  - USERNAME: 'blogger'@'localhost'
+  - PASSWORD: pass
