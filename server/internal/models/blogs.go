@@ -35,6 +35,12 @@ func (m *BlogModel) Insert(title string, content string) (int, error) {
 }
 
 func (m *BlogModel) Get(id int) (Blog, error) {
+	updateView := `UPDATE blogs SET views = views + 1 WHERE id = ?`
+	_, err := m.DB.Exec(updateView, id)
+	if err != nil {
+		return Blog{}, err
+	}
+
 	stmt := `SELECT id, title, content, created FROM blogs
   WHERE id = ?`
 
@@ -42,7 +48,7 @@ func (m *BlogModel) Get(id int) (Blog, error) {
 
 	var b Blog
 
-	err := row.Scan(&b.ID, &b.Title, &b.Content, &b.Created)
+	err = row.Scan(&b.ID, &b.Title, &b.Content, &b.Created)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Blog{}, ErrNoRecord
